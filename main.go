@@ -32,6 +32,8 @@ type StartGameRequest struct {
 	UserID string `json:"userId"`
 }
 
+const AIGoUserID = "ai-go"
+
 func main() {
 	http.HandleFunc("/ping", pingHandler)
 	http.HandleFunc("/play/", playGameHandler)
@@ -50,7 +52,7 @@ func pingHandler(w http.ResponseWriter, r *http.Request) {
 func handleStartGame(gameID string) (*http.Response, error) {
 	// Make a POST request to the other server's API
 	url := fmt.Sprintf("http://localhost:5000/api/v1/game/start/%s", gameID)
-	payload := strings.NewReader(`{"userId": "ai-go"}`)
+	payload := strings.NewReader(fmt.Sprintf(`{"userId": "%s"}`, AIGoUserID))
 
 	req, err := http.NewRequest("POST", url, payload)
 	if err != nil {
@@ -110,6 +112,7 @@ func subscribeToEvents(conn *websocket.Conn) error {
 		// Handle different message types if needed
 		switch messageType {
 		case websocket.TextMessage:
+			fmt.Println("Received test message:", string(message))
 			handleTextMessage(message, conn)
 		case websocket.BinaryMessage:
 			fmt.Println("Received binary message:", message)
@@ -145,45 +148,48 @@ func handleTextMessage(message []byte, conn *websocket.Conn) {
 		return
 	}
 
+	if gameStateUpdate.GameState.Status == "FINISHED" {
+		// Close the WebSocket connection if the game is finished
+		fmt.Println("Game finished. Closing WebSocket connection.")
+		conn.Close()
+		return
+	}
 	// Check if it's AI's turn
-	if gameStateUpdate.GameState.Players[gameStateUpdate.GameState.CurrentPlayer] == "ai-go" {
-		// Check if the game is ongoing
-		if gameStateUpdate.GameState.Status == "ONGOING" {
-			currentPlayer := "X"
-			if gameStateUpdate.GameState.CurrentPlayer == 0 {
-				currentPlayer = "O"
-			}
-			state := GameState{
-				Board:         gameStateUpdate.GameState.Board,
-				CurrentPlayer: currentPlayer,
-				Maximizing:    true, // Maximizing player is X
-			}
-			depth := 5 // or 6, 7 depending on your preference
-			alpha := math.MinInt64
-			beta := math.MaxInt64
-			_, bestRow, bestCol := Minimax(state, depth, alpha, beta)
+	if isMyTurn(&gameStateUpdate) && gameStateUpdate.GameState.Status == "ONGOING" {
+		playTurn(conn, &gameStateUpdate)
+	}
+}
 
-			// Publish move
-			move := map[string]interface{}{
-				"type":   "tileClick",
-				"player": "ai-go",
-				"row":    bestRow,
-				"col":    bestCol,
-			}
-			moveJSON, err := json.Marshal(move)
-			if err != nil {
-				fmt.Println("Error marshalling move JSON:", err)
-				return
-			}
-			if err := conn.WriteMessage(websocket.TextMessage, moveJSON); err != nil {
-				fmt.Println("Error publishing move:", err)
-				return
-			}
-		} else if gameStateUpdate.GameState.Status == "FINISHED" {
-			// Close the WebSocket connection if the game is finished
-			fmt.Println("Game finished. Closing WebSocket connection.")
-			conn.Close()
-		}
+func playTurn(conn *websocket.Conn, gameStateUpdate *GameStateUpdate) {
+	currentPlayer := "X"
+	if gameStateUpdate.GameState.CurrentPlayer == 0 {
+		currentPlayer = "O"
+	}
+	state := GameState{
+		Board:         gameStateUpdate.GameState.Board,
+		CurrentPlayer: currentPlayer,
+		Maximizing:    true, // Maximizing player is X
+	}
+	depth := 5 // or 6, 7 depending on your preference
+	alpha := math.MinInt64
+	beta := math.MaxInt64
+	_, bestRow, bestCol := Minimax(state, depth, alpha, beta)
+
+	// Publish move
+	move := map[string]interface{}{
+		"type":   "tileClick",
+		"player": AIGoUserID,
+		"row":    bestRow,
+		"col":    bestCol,
+	}
+	moveJSON, err := json.Marshal(move)
+	if err != nil {
+		fmt.Println("Error marshalling move JSON:", err)
+		return
+	}
+	if err := conn.WriteMessage(websocket.TextMessage, moveJSON); err != nil {
+		fmt.Println("Error publishing move:", err)
+		return
 	}
 }
 
@@ -305,4 +311,8 @@ func min(a, b int) int {
 		return a
 	}
 	return b
+}
+
+func isMyTurn(gameStateUpdate *GameStateUpdate) bool {
+	return gameStateUpdate.GameState.Players[gameStateUpdate.GameState.CurrentPlayer] == AIGoUserID
 }
