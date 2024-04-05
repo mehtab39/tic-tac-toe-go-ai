@@ -3,16 +3,7 @@ package server
 import (
 	"math"
 	"os"
-	"strings"
 )
-
-func ExtractGameIDFromURL(path string) (string, bool) {
-	parts := strings.Split(path, "/")
-	if len(parts) != 3 {
-		return "", false
-	}
-	return parts[2], true
-}
 
 func GetUserId() string {
 	return os.Getenv("USER_ID")

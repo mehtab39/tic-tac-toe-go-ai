@@ -10,7 +10,16 @@ import (
 	"github.com/gorilla/websocket"
 )
 
-func CreateWebSocketConnection(gameID string) error {
+// WebSocketConnector is an interface for WebSocket connection.
+type WebSocketConnector interface {
+	Connect(gameID string) error
+}
+
+// DefaultWebSocketConnector is the default implementation of WebSocketConnector.
+type DefaultWebSocketConnector struct{}
+
+// Connect creates a WebSocket connection.
+func (d *DefaultWebSocketConnector) Connect(gameID string) error {
 	fmt.Printf("Creating ws connection at: %s/game/%s\n", os.Getenv("WS_GAME_SERVER"), gameID)
 	wsURL := fmt.Sprintf("%s/game/%s", os.Getenv("WS_GAME_SERVER"), gameID)
 	conn, _, err := websocket.DefaultDialer.Dial(wsURL, nil)
@@ -22,6 +31,12 @@ func CreateWebSocketConnection(gameID string) error {
 	err = subscribeToEvents(conn)
 
 	return err
+}
+
+// CreateWebSocketConnection creates a WebSocket connection using the provided WebSocketConnector.
+func CreateWebSocketConnection(gameID string) error {
+	connector := DefaultWebSocketConnector{}
+	return connector.Connect(gameID)
 }
 
 func subscribeToEvents(conn *websocket.Conn) error {
