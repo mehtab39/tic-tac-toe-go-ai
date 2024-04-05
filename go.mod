@@ -1,4 +1,4 @@
-module tic-tac-toe-ai
+module go-be-ai
 
 go 1.21.6
 
