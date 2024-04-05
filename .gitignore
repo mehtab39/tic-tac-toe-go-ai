@@ -21,5 +21,15 @@ vendor/
 *.so
 *.dylib
 
+*.test
+*.prof
+/build/
+/go.sum
+/go.work
+
 # The Go executable
 bin/
+
+# env
+.env
+

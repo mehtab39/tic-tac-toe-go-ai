@@ -1,12 +1,26 @@
-package main
+package server
 
-import "math"
+import (
+	"math"
+	"os"
+	"strings"
+)
 
-// Represents the state of the Tic-Tac-Toe game
-type GameState struct {
-	Board         [][]string // 3x3 board
-	CurrentPlayer string     // Current player ('X' or 'O')
-	Maximizing    bool       // Indicates if it's the maximizing player's turn
+func ExtractGameIDFromURL(path string) (string, bool) {
+	parts := strings.Split(path, "/")
+	if len(parts) != 3 {
+		return "", false
+	}
+	return parts[2], true
+}
+
+func GetUserId() string {
+	return os.Getenv("USER_ID")
+}
+
+func IsMyTurn(gameStateUpdate *GameStateUpdate) bool {
+
+	return gameStateUpdate.GameState.Players[gameStateUpdate.GameState.CurrentPlayer] == GetUserId()
 }
 
 // Evaluate function to determine the score of the current state
