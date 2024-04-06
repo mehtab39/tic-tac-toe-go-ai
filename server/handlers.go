@@ -50,9 +50,9 @@ func (c *RealHTTPClient) Do(req *http.Request) (*http.Response, error) {
 // HandleStartGame makes a POST request to start a game
 func HandleStartGame(gameID string, client HTTPClient) (*http.Response, error) {
 	// Make a POST request to the other server's API
-	fmt.Printf("Start game request from %s \n", GetUserId())
+	fmt.Printf("Start game request from %s \n", GetAIUserId())
 	url := fmt.Sprintf("%s/api/v1/game/start/%s", os.Getenv("GAME_SERVER"), gameID)
-	payload := strings.NewReader(fmt.Sprintf(`{"userId": "%s"}`, GetUserId()))
+	payload := strings.NewReader(fmt.Sprintf(`{"userId": "%s"}`, GetAIUserId()))
 
 	req, err := http.NewRequest("POST", url, payload)
 	if err != nil {

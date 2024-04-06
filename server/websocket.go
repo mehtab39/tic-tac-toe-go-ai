@@ -3,7 +3,6 @@ package server
 import (
 	"encoding/json"
 	"fmt"
-	"math"
 	"os"
 	"time"
 
@@ -74,7 +73,7 @@ func handleTextMessage(message []byte, conn *websocket.Conn) {
 		return
 	}
 	// Check if it's AI's turn
-	if IsMyTurn(&gameStateUpdate) && gameStateUpdate.GameState.Status == "ONGOING" {
+	if isAITurn(&gameStateUpdate) && gameStateUpdate.GameState.Status == "ONGOING" {
 		time.Sleep(time.Millisecond * 500)
 		playTurn(conn, &gameStateUpdate)
 	}
@@ -85,7 +84,7 @@ func playTurn(conn *websocket.Conn, gameStateUpdate *GameStateUpdate) {
 	// Publish move
 	move := map[string]interface{}{
 		"type":   "tileClick",
-		"player": GetUserId(),
+		"player": GetAIUserId(),
 		"row":    row,
 		"col":    col,
 	}
@@ -101,19 +100,6 @@ func playTurn(conn *websocket.Conn, gameStateUpdate *GameStateUpdate) {
 }
 
 func Play(gameStateUpdate GameStateUpdate) (int, int) {
-	currentPlayer := "X"
-	if gameStateUpdate.GameState.CurrentPlayer == 0 {
-		currentPlayer = "O"
-	}
-	state := GameState{
-		Board:         gameStateUpdate.GameState.Board,
-		CurrentPlayer: currentPlayer,
-		Maximizing:    true,
-	}
-	depth := 5
-	alpha := math.MinInt64
-	beta := math.MaxInt64
-	_, bestRow, bestCol := Minimax(state, depth, alpha, beta)
-
+	bestRow, bestCol := GetAIMove(gameStateUpdate.GameState.Board)
 	return bestRow, bestCol
 }
