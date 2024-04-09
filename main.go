@@ -2,17 +2,20 @@ package main
 
 import (
 	"fmt"
-	"github.com/joho/godotenv"
 	"go-be-ai/server"
 	"net/http"
 	"os"
+
+	"github.com/joho/godotenv"
 )
 
-func main() {
+func init() {
 	err := godotenv.Load()
 	if err != nil {
 		fmt.Printf("Error loading .env file: %v", err)
 	}
+}
+func main() {
 	port := os.Getenv("PORT")
 	fmt.Printf("Server is listening on port %s...\n", port)
 	http.HandleFunc("/ping", server.PingHandler)
